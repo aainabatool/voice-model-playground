@@ -29,3 +29,13 @@ export async function transcribeAudio(file, model = "faster-whisper") {
   if (!res.ok) throw new Error("Transcription failed");
   return res.json();
 }
+
+export async function benchmarkTTS({ text, model, voice, speed }) {
+  const res = await fetch(`${API_BASE}/api/benchmark/tts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, model, voice, speed }),
+  });
+  if (!res.ok) throw new Error("TTS benchmark failed");
+  return res.json();
+}

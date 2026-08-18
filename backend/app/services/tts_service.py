@@ -1,5 +1,6 @@
 from app.models.registry import get_tts_model, list_tts_models
 from app.utils.audio import audio_to_wav_bytes
+from app.utils.benchmark import compute_rtf, timer
 
 
 class TTSService:
@@ -7,6 +8,24 @@ class TTSService:
         tts_model = get_tts_model(model)
         audio, sample_rate = tts_model.generate(text, voice=voice, speed=speed)
         return audio_to_wav_bytes(audio, sample_rate)
+
+    def generate_speech_with_metrics(self, text: str, model: str, voice: str, speed: float) -> dict:
+        tts_model = get_tts_model(model)
+
+        with timer() as t:
+            audio, sample_rate = tts_model.generate(text, voice=voice, speed=speed)
+
+        audio_duration = len(audio) / sample_rate
+        wav_bytes = audio_to_wav_bytes(audio, sample_rate)
+
+        return {
+            "wav_bytes": wav_bytes,
+            "generation_time": t.elapsed,
+            "audio_duration": audio_duration,
+            "rtf": compute_rtf(t.elapsed, audio_duration),
+            "model": model,
+            "voice": voice,
+        }
 
     def get_model_info(self, model: str) -> dict:
         tts_model = get_tts_model(model)

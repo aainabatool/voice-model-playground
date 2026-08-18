@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fetchModels, generateSpeech, transcribeAudio } from "./services/api";
+import { fetchModels, generateSpeech, transcribeAudio, benchmarkTTS } from "./services/api";
 import "./App.css";
 
 function App() {
@@ -16,6 +16,10 @@ function App() {
   const [sttResult, setSttResult] = useState(null);
   const [sttLoading, setSttLoading] = useState(false);
   const [sttError, setSttError] = useState(null);
+
+  const [benchmarkResults, setBenchmarkResults] = useState([]);
+  const [benchmarkLoading, setBenchmarkLoading] = useState(false);
+  const [benchmarkError, setBenchmarkError] = useState(null);
 
   useEffect(() => {
     fetchModels()
@@ -64,6 +68,29 @@ function App() {
       setSttError(err.message);
     } finally {
       setSttLoading(false);
+    }
+  }
+
+  async function handleCompareModels() {
+    setBenchmarkLoading(true);
+    setBenchmarkError(null);
+    setBenchmarkResults([]);
+    try {
+      const results = [];
+      for (const m of models) {
+        const result = await benchmarkTTS({
+          text,
+          model: m.id,
+          voice: m.voices[0],
+          speed: 1.0,
+        });
+        results.push(result);
+      }
+      setBenchmarkResults(results);
+    } catch (err) {
+      setBenchmarkError(err.message);
+    } finally {
+      setBenchmarkLoading(false);
     }
   }
 
@@ -144,6 +171,39 @@ function App() {
           <p><strong>Language:</strong> {sttResult.language}</p>
           <p><strong>Duration:</strong> {sttResult.duration.toFixed(2)}s</p>
         </div>
+      )}
+
+      <hr style={{ margin: "2rem 0" }} />
+
+      <h2>Compare Models</h2>
+      <p>Runs the text above through every available TTS engine and compares speed.</p>
+      <button onClick={handleCompareModels} disabled={benchmarkLoading || !text.trim()}>
+        {benchmarkLoading ? "Benchmarking..." : "Compare Models"}
+      </button>
+
+      {benchmarkError && <p className="error">{benchmarkError}</p>}
+
+      {benchmarkResults.length > 0 && (
+        <table style={{ marginTop: "1rem", borderCollapse: "collapse", width: "100%" }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", borderBottom: "1px solid #555" }}>Model</th>
+              <th style={{ textAlign: "left", borderBottom: "1px solid #555" }}>Gen Time (s)</th>
+              <th style={{ textAlign: "left", borderBottom: "1px solid #555" }}>Audio Duration (s)</th>
+              <th style={{ textAlign: "left", borderBottom: "1px solid #555" }}>RTF</th>
+            </tr>
+          </thead>
+          <tbody>
+            {benchmarkResults.map((r) => (
+              <tr key={r.model}>
+                <td>{r.model}</td>
+                <td>{r.generation_time.toFixed(3)}</td>
+                <td>{r.audio_duration.toFixed(2)}</td>
+                <td>{r.rtf.toFixed(3)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
