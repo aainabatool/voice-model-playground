@@ -25,3 +25,8 @@ voice-model-playground = "voice_model_playground:main"
 [build-system]
 requires = ["uv_build>=0.12.2,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "websockets>=16.1.1",
+]

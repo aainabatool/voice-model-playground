@@ -18,6 +18,15 @@ class TTSModel(ABC):
         """
         raise NotImplementedError
 
+    def generate_stream(self, text: str, voice: str, speed: float = 1.0):
+        """Yield (audio_chunk, sample_rate) tuples incrementally.
+
+        Default implementation: no real streaming, just yields the single
+        full result from generate(). Subclasses override for true chunking.
+        """
+        audio, sample_rate = self.generate(text, voice=voice, speed=speed)
+        yield audio, sample_rate
+
     @abstractmethod
     def get_voices(self) -> list[str]:
         """Return the list of voice IDs this model supports."""

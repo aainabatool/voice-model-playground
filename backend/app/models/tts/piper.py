@@ -1,10 +1,17 @@
 import wave
 import io
+import re
 from pathlib import Path
 
 from app.models.base import TTSModel
 
 VOICES_DIR = Path("piper_voices")
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Naive sentence splitter — splits on ., !, ? followed by whitespace."""
+    parts = re.split(r"(?<=[.!?])\s+", text.strip())
+    return [p for p in parts if p]
 
 
 class PiperModel(TTSModel):
@@ -32,15 +39,11 @@ class PiperModel(TTSModel):
 
         self._loaded_voices[voice_id] = PiperVoice.load(str(model_path))
 
-    def generate(self, text: str, voice: str = "en_US-lessac-medium", speed: float = 1.0):
-        if voice not in self._loaded_voices:
-            self.load(voice)
-
+    def _synthesize_one(self, text: str, voice: str, speed: float):
         piper_voice = self._loaded_voices[voice]
 
         from piper import SynthesisConfig
 
-        # Piper's length_scale is inverse of speed: >1.0 = slower, <1.0 = faster
         syn_config = SynthesisConfig(length_scale=1.0 / speed if speed else 1.0)
 
         buffer = io.BytesIO()
@@ -57,6 +60,22 @@ class PiperModel(TTSModel):
         audio = np.frombuffer(raw_audio, dtype=np.int16)
         return audio, sample_rate
 
+    def generate(self, text: str, voice: str = "en_US-lessac-medium", speed: float = 1.0):
+        if voice not in self._loaded_voices:
+            self.load(voice)
+        return self._synthesize_one(text, voice, speed)
+
+    def generate_stream(self, text: str, voice: str = "en_US-lessac-medium", speed: float = 1.0):
+        if voice not in self._loaded_voices:
+            self.load(voice)
+
+        sentences = _split_sentences(text)
+        if not sentences:
+            sentences = [text]  # fallback for text with no sentence punctuation
+
+        for sentence in sentences:
+            yield self._synthesize_one(sentence, voice, speed)
+
     def get_voices(self) -> list[str]:
         return list(self.VOICES.keys())
 
@@ -66,4 +85,5 @@ class PiperModel(TTSModel):
             "pitch": False,
             "voices": self.get_voices(),
             "sample_rate": 22050,
+            "streaming": True,
         }

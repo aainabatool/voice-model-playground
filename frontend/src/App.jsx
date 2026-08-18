@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { fetchModels, generateSpeech, transcribeAudio, benchmarkTTS } from "./services/api";
+import { useState, useEffect, useRef } from "react";
+import { fetchModels, generateSpeech, transcribeAudio, benchmarkTTS, streamSpeech } from "./services/api";
 import "./App.css";
 
 function App() {
@@ -20,6 +20,16 @@ function App() {
   const [benchmarkResults, setBenchmarkResults] = useState([]);
   const [benchmarkLoading, setBenchmarkLoading] = useState(false);
   const [benchmarkError, setBenchmarkError] = useState(null);
+
+  const [streamText, setStreamText] = useState(
+    "The future of AI is voice. This is a streaming test. Each sentence arrives as its own chunk. This proves incremental delivery works."
+  );
+  const [streamChunks, setStreamChunks] = useState([]);
+  const [streaming, setStreaming] = useState(false);
+  const [streamError, setStreamError] = useState(null);
+  const audioRef = useRef(null);
+  const queueRef = useRef([]);
+  const playingRef = useRef(false);
 
   useEffect(() => {
     fetchModels()
@@ -92,6 +102,50 @@ function App() {
     } finally {
       setBenchmarkLoading(false);
     }
+  }
+
+  function playNextInQueue() {
+    if (playingRef.current) return;
+    const next = queueRef.current.shift();
+    if (!next) return;
+
+    playingRef.current = true;
+    if (audioRef.current) {
+      audioRef.current.src = next;
+      audioRef.current.play();
+    }
+  }
+
+  function handleAudioEnded() {
+    playingRef.current = false;
+    playNextInQueue();
+  }
+
+  function handleStream() {
+    setStreaming(true);
+    setStreamError(null);
+    setStreamChunks([]);
+    queueRef.current = [];
+    playingRef.current = false;
+
+    streamSpeech({
+      text: streamText,
+      model,
+      voice,
+      speed,
+      onChunk: (url) => {
+        setStreamChunks((prev) => [...prev, url]);
+        queueRef.current.push(url);
+        playNextInQueue();
+      },
+      onDone: () => {
+        setStreaming(false);
+      },
+      onError: (message) => {
+        setStreamError(message);
+        setStreaming(false);
+      },
+    });
   }
 
   return (
@@ -204,6 +258,31 @@ function App() {
             ))}
           </tbody>
         </table>
+      )}
+
+      <hr style={{ margin: "2rem 0" }} />
+
+      <h2>Streaming (WebSocket)</h2>
+      <p>Text is split into sentences and streamed as separate audio chunks, playing back-to-back as they arrive.</p>
+      <textarea
+        value={streamText}
+        onChange={(e) => setStreamText(e.target.value)}
+        rows={3}
+        placeholder="Enter text to stream..."
+      />
+      <br />
+      <button onClick={handleStream} disabled={streaming || !streamText.trim()}>
+        {streaming ? "Streaming..." : "Start Streaming"}
+      </button>
+
+      {streamError && <p className="error">{streamError}</p>}
+
+      <audio ref={audioRef} onEnded={handleAudioEnded} style={{ marginTop: "1rem" }} />
+
+      {streamChunks.length > 0 && (
+        <p style={{ marginTop: "0.5rem" }}>
+          Chunks received: {streamChunks.length}
+        </p>
       )}
     </div>
   );

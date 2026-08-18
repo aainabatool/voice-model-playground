@@ -27,6 +27,12 @@ class TTSService:
             "voice": voice,
         }
 
+    def generate_speech_stream(self, text: str, model: str, voice: str, speed: float):
+        """Yield WAV-encoded audio chunks incrementally as they're generated."""
+        tts_model = get_tts_model(model)
+        for audio, sample_rate in tts_model.generate_stream(text, voice=voice, speed=speed):
+            yield audio_to_wav_bytes(audio, sample_rate)
+
     def get_model_info(self, model: str) -> dict:
         tts_model = get_tts_model(model)
         return {

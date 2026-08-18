@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import benchmark, models, stt, tts
+from app.api import benchmark, models, stt, tts, ws_tts
 from app.core.config import settings
 
 app = FastAPI(title=settings.app_name)
@@ -17,6 +17,7 @@ app.include_router(tts.router)
 app.include_router(stt.router)
 app.include_router(benchmark.router)
 app.include_router(models.router)
+app.include_router(ws_tts.router)
 
 
 @app.get("/health")
