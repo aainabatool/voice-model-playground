@@ -4,3 +4,4 @@ __pycache__/
 .env
 outputs/
 *.wav
+piper_voices/

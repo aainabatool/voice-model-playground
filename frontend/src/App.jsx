@@ -4,7 +4,8 @@ import "./App.css";
 
 function App() {
   const [text, setText] = useState("The future of AI is voice.");
-  const [voices, setVoices] = useState([]);
+  const [models, setModels] = useState([]);
+  const [model, setModel] = useState("kokoro");
   const [voice, setVoice] = useState("af_heart");
   const [speed, setSpeed] = useState(1.0);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -14,17 +15,31 @@ function App() {
   useEffect(() => {
     fetchModels()
       .then((data) => {
-        const kokoro = data.tts.find((m) => m.id === "kokoro");
-        if (kokoro) setVoices(kokoro.voices);
+        setModels(data.tts);
+        if (data.tts.length > 0) {
+          setModel(data.tts[0].id);
+          setVoice(data.tts[0].voices[0]);
+        }
       })
       .catch((err) => setError(err.message));
   }, []);
+
+  const currentModel = models.find((m) => m.id === model);
+  const voices = currentModel ? currentModel.voices : [];
+
+  function handleModelChange(newModelId) {
+    setModel(newModelId);
+    const found = models.find((m) => m.id === newModelId);
+    if (found && found.voices.length > 0) {
+      setVoice(found.voices[0]);
+    }
+  }
 
   async function handleGenerate() {
     setLoading(true);
     setError(null);
     try {
-      const url = await generateSpeech({ text, model: "kokoro", voice, speed });
+      const url = await generateSpeech({ text, model, voice, speed });
       setAudioUrl(url);
     } catch (err) {
       setError(err.message);
@@ -45,6 +60,17 @@ function App() {
       />
 
       <div className="controls">
+        <label>
+          Model
+          <select value={model} onChange={(e) => handleModelChange(e.target.value)}>
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.id}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label>
           Voice
           <select value={voice} onChange={(e) => setVoice(e.target.value)}>

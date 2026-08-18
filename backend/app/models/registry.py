@@ -1,8 +1,10 @@
 from app.models.tts.kokoro import KokoroModel
+from app.models.tts.piper import PiperModel
 
 # Maps model_id -> model instance. Add new TTS models here as they're built.
 TTS_REGISTRY = {
     "kokoro": KokoroModel(),
+    "piper": PiperModel(),
 }
 
 
