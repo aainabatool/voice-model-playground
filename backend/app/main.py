@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import models, tts
+from app.api import models, stt, tts
 from app.core.config import settings
 
 app = FastAPI(title=settings.app_name)
@@ -14,6 +14,7 @@ app.add_middleware(
 )
 
 app.include_router(tts.router)
+app.include_router(stt.router)
 app.include_router(models.router)
 
 

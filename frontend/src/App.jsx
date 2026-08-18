@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fetchModels, generateSpeech } from "./services/api";
+import { fetchModels, generateSpeech, transcribeAudio } from "./services/api";
 import "./App.css";
 
 function App() {
@@ -11,6 +11,11 @@ function App() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const [sttFile, setSttFile] = useState(null);
+  const [sttResult, setSttResult] = useState(null);
+  const [sttLoading, setSttLoading] = useState(false);
+  const [sttError, setSttError] = useState(null);
 
   useEffect(() => {
     fetchModels()
@@ -45,6 +50,20 @@ function App() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleTranscribe() {
+    if (!sttFile) return;
+    setSttLoading(true);
+    setSttError(null);
+    try {
+      const result = await transcribeAudio(sttFile);
+      setSttResult(result);
+    } catch (err) {
+      setSttError(err.message);
+    } finally {
+      setSttLoading(false);
     }
   }
 
@@ -103,6 +122,28 @@ function App() {
 
       {audioUrl && (
         <audio controls src={audioUrl} style={{ marginTop: "1rem" }} />
+      )}
+
+      <hr style={{ margin: "2rem 0" }} />
+
+      <h2>Speech to Text</h2>
+      <input
+        type="file"
+        accept="audio/*"
+        onChange={(e) => setSttFile(e.target.files[0])}
+      />
+      <button onClick={handleTranscribe} disabled={sttLoading || !sttFile}>
+        {sttLoading ? "Transcribing..." : "Transcribe"}
+      </button>
+
+      {sttError && <p className="error">{sttError}</p>}
+
+      {sttResult && (
+        <div style={{ marginTop: "1rem" }}>
+          <p><strong>Text:</strong> {sttResult.text}</p>
+          <p><strong>Language:</strong> {sttResult.language}</p>
+          <p><strong>Duration:</strong> {sttResult.duration.toFixed(2)}s</p>
+        </div>
       )}
     </div>
   );

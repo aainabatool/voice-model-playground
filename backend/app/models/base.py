@@ -27,3 +27,25 @@ class TTSModel(ABC):
     def get_capabilities(self) -> dict:
         """Return a dict describing supported controls (e.g. speed, pitch)."""
         raise NotImplementedError
+
+
+class STTModel(ABC):
+    """Base interface all STT model adapters must implement."""
+
+    @abstractmethod
+    def load(self) -> None:
+        """Load the model into memory. Called once, lazily, on first use."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def transcribe(self, audio_path: str) -> dict:
+        """Transcribe audio at the given file path.
+
+        Returns a dict with at least: text, language, duration.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_capabilities(self) -> dict:
+        """Return a dict describing supported controls/metadata."""
+        raise NotImplementedError

@@ -9,9 +9,11 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.141.1",
+    "faster-whisper>=1.2.1",
     "kokoro>=0.9.4",
     "piper-tts>=1.7.0",
     "pydantic-settings>=2.15.0",
+    "python-multipart>=0.0.32",
     "soundfile>=0.14.0",
     "uvicorn[standard]>=0.52.3",
 ]

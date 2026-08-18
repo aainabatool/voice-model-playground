@@ -16,3 +16,16 @@ export async function generateSpeech({ text, model, voice, speed }) {
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
+
+export async function transcribeAudio(file, model = "faster-whisper") {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("model", model);
+
+  const res = await fetch(`${API_BASE}/api/stt/transcribe`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Transcription failed");
+  return res.json();
+}
