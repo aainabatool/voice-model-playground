@@ -2,7 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { fetchModels, generateSpeech, transcribeAudio, benchmarkTTS, streamSpeech } from "./services/api";
 import "./App.css";
 
+const MODEL_COLORS = {
+  kokoro: "var(--kokoro)",
+  piper: "var(--piper)",
+};
+
 function App() {
+  const [connected, setConnected] = useState(true);
+
   const [text, setText] = useState("The future of AI is voice.");
   const [models, setModels] = useState([]);
   const [model, setModel] = useState("kokoro");
@@ -22,7 +29,7 @@ function App() {
   const [benchmarkError, setBenchmarkError] = useState(null);
 
   const [streamText, setStreamText] = useState(
-    "The future of AI is voice. This is a streaming test. Each sentence arrives as its own chunk. This proves incremental delivery works."
+    "The future of AI is voice. Each sentence arrives as its own chunk."
   );
   const [streamChunks, setStreamChunks] = useState([]);
   const [streaming, setStreaming] = useState(false);
@@ -35,12 +42,16 @@ function App() {
     fetchModels()
       .then((data) => {
         setModels(data.tts);
+        setConnected(true);
         if (data.tts.length > 0) {
           setModel(data.tts[0].id);
           setVoice(data.tts[0].voices[0]);
         }
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => {
+        setError(err.message);
+        setConnected(false);
+      });
   }, []);
 
   const currentModel = models.find((m) => m.id === model);
@@ -88,12 +99,7 @@ function App() {
     try {
       const results = [];
       for (const m of models) {
-        const result = await benchmarkTTS({
-          text,
-          model: m.id,
-          voice: m.voices[0],
-          speed: 1.0,
-        });
+        const result = await benchmarkTTS({ text, model: m.id, voice: m.voices[0], speed: 1.0 });
         results.push(result);
       }
       setBenchmarkResults(results);
@@ -108,7 +114,6 @@ function App() {
     if (playingRef.current) return;
     const next = queueRef.current.shift();
     if (!next) return;
-
     playingRef.current = true;
     if (audioRef.current) {
       audioRef.current.src = next;
@@ -138,9 +143,7 @@ function App() {
         queueRef.current.push(url);
         playNextInQueue();
       },
-      onDone: () => {
-        setStreaming(false);
-      },
+      onDone: () => setStreaming(false),
       onError: (message) => {
         setStreamError(message);
         setStreaming(false);
@@ -148,142 +151,219 @@ function App() {
     });
   }
 
+  const maxSpeedScore =
+    benchmarkResults.length > 0
+      ? Math.max(...benchmarkResults.map((r) => 1 / r.rtf))
+      : 1;
+
   return (
-    <div className="playground">
-      <h1>Voice Playground</h1>
+    <div className="app">
+      <header className="header">
+        <div className="brand">
+          <div className="logo-mark">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M12 3v18M7 7v10M17 7v10M3 10v4M21 10v4"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+          <div>
+            <div className="brand-name">Voice Model Playground</div>
+            <div className="brand-tag">Text-to-Speech &amp; Speech-to-Text Benchmarking</div>
+          </div>
+        </div>
+        <div className="status">
+          <span className={`status-dot ${connected ? "" : "offline"}`}></span>
+          {connected ? "Backend connected" : "Backend unreachable"}
+        </div>
+      </header>
 
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={4}
-        placeholder="Enter text to synthesize..."
-      />
+      <p className="intro">
+        A local-first platform for comparing text-to-speech and speech-to-text models, with real
+        latency/accuracy benchmarking and WebSocket streaming. Two TTS engines (Kokoro, Piper) and
+        one STT engine (Faster-Whisper) run behind a shared adapter interface.
+      </p>
 
-      <div className="controls">
-        <label>
-          Model
-          <select value={model} onChange={(e) => handleModelChange(e.target.value)}>
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.id}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="grid">
+        <section id="synthesize" className="panel section">
+          <div className="panel-header">
+            <h2 className="panel-title">Text to Speech</h2>
+            <p className="panel-desc">Generate audio using a selected engine and voice.</p>
+          </div>
 
-        <label>
-          Voice
-          <select value={voice} onChange={(e) => setVoice(e.target.value)}>
-            {voices.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label className="field-label">Text</label>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
 
-        <label>
-          Speed: {speed.toFixed(1)}x
-          <input
-            type="range"
-            min="0.5"
-            max="2.0"
-            step="0.1"
-            value={speed}
-            onChange={(e) => setSpeed(parseFloat(e.target.value))}
-          />
-        </label>
+          <div className="controls-row">
+            <div className="control">
+              <label className="field-label">Model</label>
+              <select value={model} onChange={(e) => handleModelChange(e.target.value)}>
+                {models.map((m) => (
+                  <option key={m.id} value={m.id}>{m.id}</option>
+                ))}
+              </select>
+            </div>
+            <div className="control">
+              <label className="field-label">Voice</label>
+              <select value={voice} onChange={(e) => setVoice(e.target.value)}>
+                {voices.map((v) => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div className="control">
+              <label className="field-label">
+                Speed <span className="speed-value">{speed.toFixed(1)}x</span>
+              </label>
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={speed}
+                onChange={(e) => setSpeed(parseFloat(e.target.value))}
+              />
+            </div>
+          </div>
+
+          <button className="btn" onClick={handleGenerate} disabled={loading || !text.trim()}>
+            {loading ? "Generating…" : "Generate"}
+          </button>
+
+          {error && <p className="error">{error}</p>}
+          {audioUrl && <audio controls src={audioUrl} />}
+        </section>
+
+        <section id="transcribe" className="panel section">
+          <div className="panel-header">
+            <h2 className="panel-title">Speech to Text</h2>
+            <p className="panel-desc">Upload an audio file and transcribe it with Faster-Whisper.</p>
+          </div>
+
+          <div>
+            <label className="file-label" htmlFor="stt-file">
+              {sttFile ? "Change file" : "Choose audio file"}
+            </label>
+            <input
+              id="stt-file"
+              type="file"
+              accept="audio/*"
+              style={{ display: "none" }}
+              onChange={(e) => setSttFile(e.target.files[0])}
+            />
+            {sttFile && <span className="file-name">{sttFile.name}</span>}
+          </div>
+
+          <div style={{ marginTop: "0.9rem" }}>
+            <button className="btn" onClick={handleTranscribe} disabled={sttLoading || !sttFile}>
+              {sttLoading ? "Transcribing…" : "Transcribe"}
+            </button>
+          </div>
+
+          {sttError && <p className="error">{sttError}</p>}
+
+          {sttResult && (
+            <div className="output">
+              <div className="result-row">
+                <span className="result-label">Text</span>
+                <span className="result-value">{sttResult.text}</span>
+              </div>
+              <div className="result-row">
+                <span className="result-label">Language</span>
+                <span className="result-value">{sttResult.language}</span>
+              </div>
+              <div className="result-row">
+                <span className="result-label">Duration</span>
+                <span className="result-value">{sttResult.duration.toFixed(2)}s</span>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section id="compare" className="panel section">
+          <div className="panel-header">
+            <h2 className="panel-title">Model Comparison</h2>
+            <p className="panel-desc">
+              Real-time factor (RTF) across engines for the text above — lower is faster.
+            </p>
+          </div>
+
+          <button className="btn" onClick={handleCompareModels} disabled={benchmarkLoading || !text.trim()}>
+            {benchmarkLoading ? "Benchmarking…" : "Run Comparison"}
+          </button>
+
+          {benchmarkError && <p className="error">{benchmarkError}</p>}
+
+          {benchmarkResults.length > 0 && (
+            <div className="compare-list">
+              {benchmarkResults.map((r) => {
+                const speedScore = 1 / r.rtf;
+                const widthPct = (speedScore / maxSpeedScore) * 100;
+                const color = MODEL_COLORS[r.model] || "var(--accent)";
+                return (
+                  <div className="compare-row" key={r.model}>
+                    <span className="compare-model">
+                      <span className="model-dot" style={{ background: color }}></span>
+                      {r.model}
+                    </span>
+                    <div className="compare-track">
+                      <div
+                        className="compare-fill"
+                        style={{ width: `${widthPct}%`, background: color }}
+                      ></div>
+                    </div>
+                    <span className="compare-rtf">{r.rtf.toFixed(3)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section id="stream" className="panel section">
+          <div className="panel-header">
+            <h2 className="panel-title">Streaming Synthesis</h2>
+            <p className="panel-desc">
+              Text is streamed sentence-by-sentence over a WebSocket as it's generated.
+            </p>
+          </div>
+
+          <label className="field-label">Text</label>
+          <textarea value={streamText} onChange={(e) => setStreamText(e.target.value)} rows={3} />
+
+          <div style={{ marginTop: "0.9rem" }}>
+            <button className="btn" onClick={handleStream} disabled={streaming || !streamText.trim()}>
+              {streaming ? "Streaming…" : "Start Streaming"}
+            </button>
+          </div>
+
+          {streamError && <p className="error">{streamError}</p>}
+
+          <audio ref={audioRef} onEnded={handleAudioEnded} style={{ display: "none" }} />
+
+          {streamChunks.length > 0 && (
+            <>
+              <div className="chunk-row">
+                {streamChunks.map((_, i) => (
+                  <div key={i} className="chunk-dot arrived">{i + 1}</div>
+                ))}
+              </div>
+              <p className="result-label" style={{ marginTop: "0.7rem", display: "block" }}>
+                {streamChunks.length} chunk{streamChunks.length !== 1 ? "s" : ""} received
+              </p>
+            </>
+          )}
+        </section>
       </div>
 
-      <button onClick={handleGenerate} disabled={loading || !text.trim()}>
-        {loading ? "Generating..." : "Generate"}
-      </button>
-
-      {error && <p className="error">{error}</p>}
-
-      {audioUrl && (
-        <audio controls src={audioUrl} style={{ marginTop: "1rem" }} />
-      )}
-
-      <hr style={{ margin: "2rem 0" }} />
-
-      <h2>Speech to Text</h2>
-      <input
-        type="file"
-        accept="audio/*"
-        onChange={(e) => setSttFile(e.target.files[0])}
-      />
-      <button onClick={handleTranscribe} disabled={sttLoading || !sttFile}>
-        {sttLoading ? "Transcribing..." : "Transcribe"}
-      </button>
-
-      {sttError && <p className="error">{sttError}</p>}
-
-      {sttResult && (
-        <div style={{ marginTop: "1rem" }}>
-          <p><strong>Text:</strong> {sttResult.text}</p>
-          <p><strong>Language:</strong> {sttResult.language}</p>
-          <p><strong>Duration:</strong> {sttResult.duration.toFixed(2)}s</p>
-        </div>
-      )}
-
-      <hr style={{ margin: "2rem 0" }} />
-
-      <h2>Compare Models</h2>
-      <p>Runs the text above through every available TTS engine and compares speed.</p>
-      <button onClick={handleCompareModels} disabled={benchmarkLoading || !text.trim()}>
-        {benchmarkLoading ? "Benchmarking..." : "Compare Models"}
-      </button>
-
-      {benchmarkError && <p className="error">{benchmarkError}</p>}
-
-      {benchmarkResults.length > 0 && (
-        <table style={{ marginTop: "1rem", borderCollapse: "collapse", width: "100%" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left", borderBottom: "1px solid #555" }}>Model</th>
-              <th style={{ textAlign: "left", borderBottom: "1px solid #555" }}>Gen Time (s)</th>
-              <th style={{ textAlign: "left", borderBottom: "1px solid #555" }}>Audio Duration (s)</th>
-              <th style={{ textAlign: "left", borderBottom: "1px solid #555" }}>RTF</th>
-            </tr>
-          </thead>
-          <tbody>
-            {benchmarkResults.map((r) => (
-              <tr key={r.model}>
-                <td>{r.model}</td>
-                <td>{r.generation_time.toFixed(3)}</td>
-                <td>{r.audio_duration.toFixed(2)}</td>
-                <td>{r.rtf.toFixed(3)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      <hr style={{ margin: "2rem 0" }} />
-
-      <h2>Streaming (WebSocket)</h2>
-      <p>Text is split into sentences and streamed as separate audio chunks, playing back-to-back as they arrive.</p>
-      <textarea
-        value={streamText}
-        onChange={(e) => setStreamText(e.target.value)}
-        rows={3}
-        placeholder="Enter text to stream..."
-      />
-      <br />
-      <button onClick={handleStream} disabled={streaming || !streamText.trim()}>
-        {streaming ? "Streaming..." : "Start Streaming"}
-      </button>
-
-      {streamError && <p className="error">{streamError}</p>}
-
-      <audio ref={audioRef} onEnded={handleAudioEnded} style={{ marginTop: "1rem" }} />
-
-      {streamChunks.length > 0 && (
-        <p style={{ marginTop: "0.5rem" }}>
-          Chunks received: {streamChunks.length}
-        </p>
-      )}
+      <footer className="footer">
+        <a href="https://github.com/aainabatool/voice-model-playground" target="_blank" rel="noreferrer">
+          github.com/aainabatool/voice-model-playground
+        </a>
+      </footer>
     </div>
   );
 }
