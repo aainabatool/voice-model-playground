@@ -1,0 +1,114 @@
+<svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg" font-family="Inter, 'Segoe UI', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2B4570"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="900" fill="#FFFFFF"/>
+
+  <!-- Title -->
+  <text x="600" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#1A2028">Voice Model Playground — Architecture</text>
+  <text x="600" y="72" text-anchor="middle" font-size="14" fill="#5B6472">Shared model-adapter interface across TTS and STT engines</text>
+
+  <!-- Client -->
+  <rect x="440" y="104" width="320" height="64" rx="10" fill="#2B4570"/>
+  <text x="600" y="130" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">Browser (React + Vite)</text>
+  <text x="600" y="150" text-anchor="middle" font-size="11.5" fill="#CBD5E1">Synthesize · Transcribe · Compare · Stream</text>
+
+  <line x1="600" y1="168" x2="600" y2="208" stroke="#2B4570" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="618" y="192" font-size="11.5" fill="#5B6472">HTTP / WebSocket</text>
+
+  <!-- FastAPI backend container -->
+  <rect x="120" y="212" width="960" height="118" rx="10" fill="#EEF1F6" stroke="#2B4570" stroke-width="1.5"/>
+  <text x="150" y="238" font-size="14" font-weight="700" fill="#1A2028">FastAPI Backend</text>
+
+  <!-- route pills -->
+  <g font-size="12" font-weight="600" fill="#2B4570">
+    <rect x="150" y="256" width="164" height="52" rx="8" fill="#FFFFFF" stroke="#2B4570" stroke-width="1.2"/>
+    <text x="232" y="278" text-anchor="middle">/api/tts</text>
+    <text x="232" y="296" text-anchor="middle" font-size="10" font-weight="400" fill="#5B6472">generate</text>
+
+    <rect x="332" y="256" width="164" height="52" rx="8" fill="#FFFFFF" stroke="#2B4570" stroke-width="1.2"/>
+    <text x="414" y="278" text-anchor="middle">/api/stt</text>
+    <text x="414" y="296" text-anchor="middle" font-size="10" font-weight="400" fill="#5B6472">transcribe</text>
+
+    <rect x="514" y="256" width="164" height="52" rx="8" fill="#FFFFFF" stroke="#2B4570" stroke-width="1.2"/>
+    <text x="596" y="278" text-anchor="middle">/api/benchmark</text>
+    <text x="596" y="296" text-anchor="middle" font-size="10" font-weight="400" fill="#5B6472">RTF · WER · CER</text>
+
+    <rect x="696" y="256" width="164" height="52" rx="8" fill="#FFFFFF" stroke="#2B4570" stroke-width="1.2"/>
+    <text x="778" y="278" text-anchor="middle">/api/models</text>
+    <text x="778" y="296" text-anchor="middle" font-size="10" font-weight="400" fill="#5B6472">capabilities</text>
+
+    <rect x="878" y="256" width="164" height="52" rx="8" fill="#FFFFFF" stroke="#2B4570" stroke-width="1.2"/>
+    <text x="960" y="278" text-anchor="middle">/ws/tts</text>
+    <text x="960" y="296" text-anchor="middle" font-size="10" font-weight="400" fill="#5B6472">streaming</text>
+  </g>
+
+  <line x1="600" y1="330" x2="600" y2="368" stroke="#2B4570" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="618" y="352" font-size="11.5" fill="#5B6472">Services</text>
+
+  <!-- Services -->
+  <rect x="270" y="372" width="280" height="66" rx="10" fill="#FFFFFF" stroke="#2B4570" stroke-width="1.5"/>
+  <text x="410" y="398" text-anchor="middle" font-size="14" font-weight="700" fill="#1A2028">TTSService</text>
+  <text x="410" y="418" text-anchor="middle" font-size="11" fill="#5B6472">timing · RTF · WAV encoding</text>
+
+  <rect x="650" y="372" width="280" height="66" rx="10" fill="#FFFFFF" stroke="#2B4570" stroke-width="1.5"/>
+  <text x="790" y="398" text-anchor="middle" font-size="14" font-weight="700" fill="#1A2028">STTService</text>
+  <text x="790" y="418" text-anchor="middle" font-size="11" fill="#5B6472">timing · WER / CER</text>
+
+  <line x1="410" y1="438" x2="500" y2="476" stroke="#2B4570" stroke-width="2"/>
+  <line x1="790" y1="438" x2="700" y2="476" stroke="#2B4570" stroke-width="2"/>
+  <line x1="600" y1="476" x2="600" y2="480" stroke="#2B4570" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Registry -->
+  <rect x="380" y="482" width="440" height="64" rx="10" fill="#2B4570"/>
+  <text x="600" y="508" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">Model Registry</text>
+  <text x="600" y="528" text-anchor="middle" font-size="11" fill="#CBD5E1">TTS_REGISTRY  /  STT_REGISTRY</text>
+
+  <!-- fan out lines -->
+  <line x1="600" y1="546" x2="600" y2="570" stroke="#2B4570" stroke-width="2"/>
+  <line x1="250" y1="570" x2="950" y2="570" stroke="#2B4570" stroke-width="2"/>
+  <line x1="250" y1="570" x2="250" y2="602" stroke="#2B4570" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="600" y1="570" x2="600" y2="602" stroke="#2B4570" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="950" y1="570" x2="950" y2="602" stroke="#2B4570" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Model adapters -->
+  <rect x="110" y="606" width="280" height="96" rx="10" fill="#FFFFFF" stroke="#C47F17" stroke-width="2"/>
+  <text x="250" y="636" text-anchor="middle" font-size="14" font-weight="700" fill="#1A2028">KokoroModel</text>
+  <text x="250" y="656" text-anchor="middle" font-size="11" fill="#5B6472">PyTorch · Kokoro-82M</text>
+  <text x="250" y="676" text-anchor="middle" font-size="10.5" font-weight="600" fill="#C47F17">implements TTSModel</text>
+  <text x="250" y="692" text-anchor="middle" font-size="10" fill="#98A0AB">warm RTF ≈ 0.58</text>
+
+  <rect x="460" y="606" width="280" height="96" rx="10" fill="#FFFFFF" stroke="#2B6CB0" stroke-width="2"/>
+  <text x="600" y="636" text-anchor="middle" font-size="14" font-weight="700" fill="#1A2028">PiperModel</text>
+  <text x="600" y="656" text-anchor="middle" font-size="11" fill="#5B6472">ONNX Runtime</text>
+  <text x="600" y="676" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2B6CB0">implements TTSModel</text>
+  <text x="600" y="692" text-anchor="middle" font-size="10" fill="#98A0AB">warm RTF ≈ 0.07</text>
+
+  <rect x="810" y="606" width="280" height="96" rx="10" fill="#FFFFFF" stroke="#2F8F5B" stroke-width="2"/>
+  <text x="950" y="636" text-anchor="middle" font-size="14" font-weight="700" fill="#1A2028">FasterWhisperModel</text>
+  <text x="950" y="656" text-anchor="middle" font-size="11" fill="#5B6472">CTranslate2</text>
+  <text x="950" y="676" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2F8F5B">implements STTModel</text>
+  <text x="950" y="692" text-anchor="middle" font-size="10" fill="#98A0AB">WER 0.0 on test set</text>
+
+  <!-- base interface note -->
+  <rect x="330" y="738" width="540" height="56" rx="10" fill="#F7F8FA" stroke="#E2E5EA" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <text x="600" y="761" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1A2028">app/models/base.py — TTSModel &amp; STTModel (ABC)</text>
+  <text x="600" y="779" text-anchor="middle" font-size="10.5" fill="#5B6472">New engines plug in by implementing one interface — no API or service changes</text>
+
+  <!-- legend -->
+  <g font-size="10.5" fill="#5B6472">
+    <rect x="120" y="826" width="10" height="10" fill="#2B4570"/>
+    <text x="136" y="835">Core pipeline</text>
+    <rect x="240" y="826" width="10" height="10" fill="#FFFFFF" stroke="#C47F17" stroke-width="2"/>
+    <text x="256" y="835">Kokoro</text>
+    <rect x="330" y="826" width="10" height="10" fill="#FFFFFF" stroke="#2B6CB0" stroke-width="2"/>
+    <text x="346" y="835">Piper</text>
+    <rect x="410" y="826" width="10" height="10" fill="#FFFFFF" stroke="#2F8F5B" stroke-width="2"/>
+    <text x="426" y="835">Faster-Whisper</text>
+  </g>
+
+  <text x="1080" y="880" text-anchor="end" font-size="10.5" fill="#98A0AB">github.com/aainabatool/voice-model-playground</text>
+</svg>
